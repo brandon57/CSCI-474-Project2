@@ -23,8 +23,8 @@ struct activities act_visits = {0, 0, 0, 0};
 
 //Semaphores
 sem_t rooms;
-sem_t guest_check_in, check_in, get_key;
-sem_t guest_check_out, check_out, give_key;
+sem_t check_in_wait, check_in, get_key;
+sem_t check_out_wait, check_out, get_receicpt;
 
 void *guest(void *ID);
 void *Check_in_res(void *none);
@@ -38,12 +38,12 @@ int main()
     sem_init(&rooms, 0, 3);
 
     sem_init(&check_in, 0, 1);
-    sem_init(&guest_check_in, 0, 0);
+    sem_init(&check_in_wait, 0, 0);
     sem_init(&get_key, 0, 0);
 
     sem_init(&check_out, 0, 1);
-    sem_init(&guest_check_out, 0, 0);
-    sem_init(&give_key, 0, 0);
+    sem_init(&check_out_wait, 0, 0);
+    sem_init(&get_receicpt, 0, 0);
 
     //Check in and out reservationists
     pthread_t check_in_res, check_out_res;
@@ -97,7 +97,7 @@ void *guest(void *ID)
     sem_wait(&check_in);
     printf("Guest %d goes to the check-in reservationist\n", *guest_id);
     check_in_counter[0] = *guest_id;
-    sem_post(&guest_check_in);
+    sem_post(&check_in_wait);
     sem_wait(&get_key);
     room = check_in_counter[1];
     printf("Guest %d receives room %d and completes check-in\n", *guest_id, room);
@@ -110,8 +110,8 @@ void *guest(void *ID)
     sem_wait(&check_out);
     printf("Guest %d goes to the check-out reservationist and returns room %d\n", *guest_id, room);
     check_out_counter[0] = *guest_id; 
-    sem_post(&guest_check_out);
-    sem_wait(&give_key);
+    sem_post(&check_out_wait);
+    sem_wait(&get_receicpt);
     printf("Guest %d receives the receipt\n", *guest_id);
     sem_post(&rooms);
     pthread_exit(0);
@@ -121,7 +121,7 @@ void *Check_in_res(void *none)
 {
     while(1)
     {
-        sem_wait(&guest_check_in);
+        sem_wait(&check_in_wait);
         printf("The check-in reservationist greets Guest %d\n", check_in_counter[0]);
         while(1)
         {
@@ -143,7 +143,7 @@ void *Check_out_res(void *none)
 {
     while(1)
     {
-        sem_wait(&guest_check_out);
+        sem_wait(&check_out_wait);
         for(int i = 0; i < sizeof(rooms_open); i++)
         {
             if(rooms_open[i] == check_out_counter[0])
@@ -154,7 +154,7 @@ void *Check_out_res(void *none)
                 break;
             }
         }
-        sem_post(&give_key);
+        sem_post(&get_receicpt);
         sem_post(&check_out);
     }
 }

@@ -21,6 +21,7 @@ struct activities
 };
 struct activities act_visits = {0, 0, 0, 0};
 
+//Semaphores
 sem_t rooms;
 sem_t guest_check_in, check_in, get_key;
 sem_t guest_check_out, check_out, give_key;
@@ -33,7 +34,6 @@ void Hotel_activity(int ID);
 
 int main()
 {
-    //struct activities act_visits = {0, 0, 0, 0};
     srand(time(NULL));
     sem_init(&rooms, 0, 3);
 
@@ -45,17 +45,25 @@ int main()
     sem_init(&guest_check_out, 0, 0);
     sem_init(&give_key, 0, 0);
 
+    //Check in and out reservationists
     pthread_t check_in_res, check_out_res;
     pthread_create(&check_in_res, NULL, Check_in_res, NULL);
     pthread_create(&check_out_res, NULL, Check_out_res, NULL);
+    
     pthread_t guests[num_guests];
     int guest_ID[num_guests];
+    int thread;
 
     //This creates all the guests
     for(int i = 0; i < num_guests; i++)
     {
         guest_ID[i] = i;
-        pthread_create(&guests[i], NULL, guest, (void *) &guest_ID[i]);
+        thread = pthread_create(&guests[i], NULL, guest, (void *) &guest_ID[i]);
+        if(thread)
+        {
+            printf("ERROR: Counldn't create thread %d", guest_ID[i]);
+            exit(-1);
+        }
     }
 
     //This waits till all the guest threads are done
@@ -80,8 +88,10 @@ int main()
 void *guest(void *ID)
 {
     int *guest_id = (int*) ID;
+    int room;
     sem_wait(&rooms);
     printf("Guest %d enters the hotel\n", *guest_id);
+
     //Check_in
     //Mutual exclusion
     sem_wait(&check_in);
@@ -89,6 +99,8 @@ void *guest(void *ID)
     check_in_counter[0] = *guest_id;
     sem_post(&guest_check_in);
     sem_wait(&get_key);
+    room = check_in_counter[1];
+    printf("Guest %d receives room %d and completes check-in\n", *guest_id, room);
 
     //Hotel Activity
     Hotel_activity(*guest_id);
@@ -96,17 +108,17 @@ void *guest(void *ID)
     //Check_out
     //Mutual exclusion
     sem_wait(&check_out);
-    printf("Guest %d goes to the check-out reservationist\n", *guest_id);
+    printf("Guest %d goes to the check-out reservationist and returns room %d\n", *guest_id, room);
     check_out_counter[0] = *guest_id; 
     sem_post(&guest_check_out);
     sem_wait(&give_key);
+    printf("Guest %d receives the receipt\n", *guest_id);
     sem_post(&rooms);
     pthread_exit(0);
 }
 
 void *Check_in_res(void *none)
 {
-    
     while(1)
     {
         sem_wait(&guest_check_in);
@@ -117,6 +129,7 @@ void *Check_in_res(void *none)
             if(rooms_open[room_num] == 'x')
             {
                 rooms_open[room_num] = check_in_counter[0];
+                check_in_counter[1] = room_num;
                 break;
             }
         }
@@ -148,7 +161,7 @@ void *Check_out_res(void *none)
 
 void Hotel_activity(int ID)
 {
-    switch((rand() % 3) + 1)
+    switch((rand() % 4))
     {
         case 0:
             printf("Guest %d goes to the swimming pool\n", ID);

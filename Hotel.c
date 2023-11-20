@@ -8,9 +8,9 @@
 //Global variables
 char rooms_open[] = {'x', 'x', 'x'};
 int check_in_counter[2];
-int check_out_counter[2];
+int check_out_counter;
 int room_num = 0;
-#define num_guests 5
+#define NUM_GUESTS 5
 
 struct activities
 {
@@ -24,8 +24,9 @@ struct activities act_visits = {0, 0, 0, 0};
 //Semaphores
 sem_t rooms;
 sem_t check_in_wait, check_in, get_key;
-sem_t check_out_wait, check_out, get_receicpt;
+sem_t check_out_wait, check_out, get_receipt;
 
+//Functions/Threads
 void *guest(void *ID);
 void *Check_in_res(void *none);
 void *Check_out_res(void *none);
@@ -43,19 +44,19 @@ int main()
 
     sem_init(&check_out, 0, 1);
     sem_init(&check_out_wait, 0, 0);
-    sem_init(&get_receicpt, 0, 0);
+    sem_init(&get_receipt, 0, 0);
 
     //Check in and out reservationists
     pthread_t check_in_res, check_out_res;
     pthread_create(&check_in_res, NULL, Check_in_res, NULL);
     pthread_create(&check_out_res, NULL, Check_out_res, NULL);
     
-    pthread_t guests[num_guests];
-    int guest_ID[num_guests];
+    pthread_t guests[NUM_GUESTS];
+    int guest_ID[NUM_GUESTS];
     int thread;
 
     //This creates all the guests
-    for(int i = 0; i < num_guests; i++)
+    for(int i = 0; i < NUM_GUESTS; i++)
     {
         guest_ID[i] = i;
         thread = pthread_create(&guests[i], NULL, guest, (void *) &guest_ID[i]);
@@ -67,7 +68,7 @@ int main()
     }
 
     //This waits till all the guest threads are done
-    for(int i = 0; i < num_guests; i++)
+    for(int i = 0; i < NUM_GUESTS; i++)
     {
         pthread_join(guests[i], NULL);
     }
@@ -76,7 +77,7 @@ int main()
     printf("\n");
     printf("Summary:\n");
     printf("--------------------------------\n");
-    printf("Total Guests: %d\n", num_guests);
+    printf("Total Guests: %d\n", NUM_GUESTS);
     printf("Visits to pool: %d\n", act_visits.pool);
     printf("Visits to restaurant: %d\n", act_visits.restaurant);
     printf("Visits to fitness center: %d\n", act_visits.fitness_center);
@@ -109,9 +110,9 @@ void *guest(void *ID)
     //Mutual exclusion
     sem_wait(&check_out);
     printf("Guest %d goes to the check-out reservationist and returns room %d\n", *guest_id, room);
-    check_out_counter[0] = *guest_id; 
+    check_out_counter = *guest_id; 
     sem_post(&check_out_wait);
-    sem_wait(&get_receicpt);
+    sem_wait(&get_receipt);
     printf("Guest %d receives the receipt\n", *guest_id);
     sem_post(&rooms);
     pthread_exit(0);
@@ -146,15 +147,15 @@ void *Check_out_res(void *none)
         sem_wait(&check_out_wait);
         for(int i = 0; i < sizeof(rooms_open); i++)
         {
-            if(rooms_open[i] == check_out_counter[0])
+            if(rooms_open[i] == check_out_counter)
             {
-                printf("The check-out reservationist greets Guest %d and receives the key from room %d\n", check_out_counter[0], i);
+                printf("The check-out reservationist greets Guest %d and receives the key from room %d\n", check_out_counter, i);
                 rooms_open[i] = 'x';
-                printf("The receipt was printed for Guest %d\n", check_out_counter[0]);
+                printf("The receipt was printed for Guest %d\n", check_out_counter);
                 break;
             }
         }
-        sem_post(&get_receicpt);
+        sem_post(&get_receipt);
         sem_post(&check_out);
     }
 }

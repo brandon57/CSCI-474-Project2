@@ -22,7 +22,7 @@ struct activities
 struct activities act_visits = {0, 0, 0, 0};
 
 //Semaphores
-sem_t rooms;
+sem_t rooms, room_book;
 sem_t check_in_wait, check_in, get_key;
 sem_t check_out_wait, check_out, get_receipt;
 
@@ -37,6 +37,8 @@ int main()
 {
     srand(time(NULL));
     sem_init(&rooms, 0, 3);
+    sem_init(&room_book, 0, 1);
+    
 
     sem_init(&check_in, 0, 1);
     sem_init(&check_in_wait, 0, 0);
@@ -88,32 +90,34 @@ int main()
 
 void *guest(void *ID)
 {
-    int *guest_id = (int*) ID;
+    int guest_id = *((int *) ID);
     int room;
     sem_wait(&rooms);
-    printf("Guest %d enters the hotel\n", *guest_id);
+    printf("Guest %d enters the hotel\n", guest_id);
 
     //Check_in
     //Mutual exclusion
     sem_wait(&check_in);
-    printf("Guest %d goes to the check-in reservationist\n", *guest_id);
-    check_in_counter[0] = *guest_id;
+    printf("Guest %d goes to the check-in reservationist\n", guest_id);
+    check_in_counter[0] = guest_id;
     sem_post(&check_in_wait);
     sem_wait(&get_key);
     room = check_in_counter[1];
-    printf("Guest %d receives room %d and completes check-in\n", *guest_id, room);
+    printf("Guest %d receives room %d and completes check-in\n", guest_id, room);
+    sem_post(&check_in);
 
     //Hotel Activity
-    Hotel_activity(*guest_id);
+    Hotel_activity(guest_id);
 
     //Check_out
     //Mutual exclusion
     sem_wait(&check_out);
-    printf("Guest %d goes to the check-out reservationist and returns room %d\n", *guest_id, room);
-    check_out_counter = *guest_id; 
+    printf("Guest %d goes to the check-out reservationist and returns room %d\n", guest_id, room);
+    check_out_counter = guest_id; 
     sem_post(&check_out_wait);
     sem_wait(&get_receipt);
-    printf("Guest %d receives the receipt\n", *guest_id);
+    printf("Guest %d receives the receipt\n", guest_id);
+    sem_post(&check_out);
     sem_post(&rooms);
     pthread_exit(0);
 }
@@ -123,6 +127,7 @@ void *Check_in_res(void *none)
     while(1)
     {
         sem_wait(&check_in_wait);
+        sem_wait(&room_book);
         printf("The check-in reservationist greets Guest %d\n", check_in_counter[0]);
         while(1)
         {
@@ -136,7 +141,7 @@ void *Check_in_res(void *none)
         }
         printf("Check-in reservationist assigns room %d to Guest %d\n", room_num, check_in_counter[0]);
         sem_post(&get_key);
-        sem_post(&check_in);
+        sem_post(&room_book);
     }
 }
 
@@ -145,6 +150,7 @@ void *Check_out_res(void *none)
     while(1)
     {
         sem_wait(&check_out_wait);
+        sem_wait(&room_book);
         for(int i = 0; i < sizeof(rooms_open); i++)
         {
             if(rooms_open[i] == check_out_counter)
@@ -156,7 +162,7 @@ void *Check_out_res(void *none)
             }
         }
         sem_post(&get_receipt);
-        sem_post(&check_out);
+        sem_post(&room_book);
     }
 }
 

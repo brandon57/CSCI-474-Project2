@@ -36,9 +36,18 @@ Now that gcc is installed you need to navigate to where ever you downloaded the 
 
 * Running this command will compile it:[^1]
 ```
-gcc Hotel.c -o Hotel.out
+gcc Hotel.c -o Hotel.out -pthread
 ```
-[^1]: 
+[^1]: -pthread is needed in order for the program to run correctly
+
 After running the command a new file will be created. This is the file that we will run.
 
+## Running
+Now to run the program you can use this command:
+```
+./Hotel.out
+```
+Using this command will then run the program.
+
+# How to use
 

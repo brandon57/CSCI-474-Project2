@@ -36,7 +36,7 @@ Now that gcc is installed you need to navigate to where ever you downloaded the 
 
 * Running this command will compile it:[^1]
 ```
-gcc project2.c -o project1.out
+gcc Hotel.c -o Hotel.out
 ```
 [^1]: 
 After running the command a new file will be created. This is the file that we will run.

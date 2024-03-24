@@ -23,7 +23,7 @@ In order to run the program you are gonna need to compile it first. The compiler
 ## Installing GCC
 To install GCC you will need to open the terminal.
 
-* Once you have the terminal open typing this command will install it:
+Once you have the terminal open typing this command will install it:
 ```
 sudo apt install gcc
 ```
@@ -34,7 +34,7 @@ Once you do that GCC will start installing.
 ## Compiling the program
 Now that gcc is installed you need to navigate to where ever you downloaded the program. Once you've navigated to where the program is, you'll need to compile the file.
 
-* Running this command will compile it:[^1]
+Running this command will compile it:[^1]
 ```
 gcc Hotel.c -o Hotel.out -pthread
 ```

@@ -1,6 +1,6 @@
 # CSCI-474-Project2
 
-
+This project demostrates the usage of pthreads and semaphores in linux.
 
 # These are the requirements for the project
 <p align="center">

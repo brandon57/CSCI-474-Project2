@@ -1,1 +1,3 @@
-Hotel.out
+.vscode
+*.out
+*.o
